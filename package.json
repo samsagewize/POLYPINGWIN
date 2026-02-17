@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node src/index.js",
     "scan": "node src/scan.js",
-    "pick": "node src/pick.js"
+    "pick": "node src/pick.js",
+    "auto-sim": "node src/auto_simmer.js"
   },
   "dependencies": {}
 }

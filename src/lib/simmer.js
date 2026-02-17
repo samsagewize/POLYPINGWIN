@@ -48,3 +48,10 @@ export async function getBriefing({ since } = {}) {
 export async function getContext(marketId) {
   return simmerFetch(`/api/sdk/context/${marketId}`);
 }
+
+export async function placeTrade({ market_id, side, amount, venue = 'simmer' }) {
+  return simmerFetch('/api/sdk/trade', {
+    method: 'POST',
+    body: { market_id, side, amount, venue },
+  });
+}
