@@ -70,12 +70,24 @@ function summarizeWarnings(warnings) {
   const ctx = await getContext(pick.id);
 
   const warnings = ctx?.warnings || [];
-  const hasWideSpreadWarning = warnings.some((w) => String(w).toLowerCase().includes('wide spread'));
+  const spreadPct = Number(ctx?.slippage?.spread_pct ?? NaN);
+  const maxSpreadPct = Number(process.env.MAX_SPREAD_PCT || 0.15); // 15% default
+
+  const hasWideSpreadWarning = warnings.some((w) =>
+    String(w).toLowerCase().includes('wide spread'),
+  );
+  const spreadTooHigh = Number.isFinite(spreadPct) && spreadPct > maxSpreadPct;
+
+  const blockReason = hasWideSpreadWarning
+    ? 'WIDE_SPREAD_WARNING'
+    : spreadTooHigh
+      ? `SPREAD_TOO_HIGH_${spreadPct}`
+      : null;
 
   console.log(JSON.stringify({
     checked_at: new Date().toISOString(),
     agent: { agent_id: me.agent_id, name: me.name, status: me.status },
-    config: CFG,
+    config: { ...CFG, maxSpreadPct },
     pick: {
       id: pick.id,
       question: pick.question,
@@ -87,15 +99,18 @@ function summarizeWarnings(warnings) {
       tags: pick.tags,
     },
     context_gate: {
+      spread_pct: Number.isFinite(spreadPct) ? spreadPct : null,
+      max_spread_pct: maxSpreadPct,
       warnings,
       warning_summary: summarizeWarnings(warnings),
-      block_reason: hasWideSpreadWarning ? 'WIDE_SPREAD_WARNING' : null,
+      block_reason: blockReason,
+      resolution_criteria: ctx?.market?.resolution_criteria || null,
     },
     action: {
       max_usd: CFG.maxUsd,
-      guidance: hasWideSpreadWarning
-        ? 'SKIP: market flagged wide spread. Pick another or wait.'
-        : 'REVIEW: if you choose to trade, keep size <= max_usd and verify resolution criteria + order book in UI.',
+      guidance: blockReason
+        ? 'SKIP: market failed spread/warning gates. Pick another or wait.'
+        : 'REVIEW: if you choose to trade, keep size <= max_usd and verify order book in UI.',
     },
     note: 'This tool does NOT execute trades. It selects the single best candidate to review and enforces conservative gating.',
   }, null, 2));
