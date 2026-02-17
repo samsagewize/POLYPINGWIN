@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "node src/index.js",
-    "scan": "node src/scan.js"
+    "scan": "node src/scan.js",
+    "pick": "node src/pick.js"
   },
   "dependencies": {}
 }
